@@ -84,27 +84,36 @@ final class WP_Sentry_Php_Tracing {
 			return false;
 		}
 
-		$requestStartTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime( true );
+		if ( defined( 'WP_CLI') && WP_CLI ) {
+			$cliStartTime = WP_CLI_START_MICROTIME ?? microtime( true );
 
-		/** @var \GuzzleHttp\Psr7\ServerRequest $request */
-		$request = $this->resolve_request_from_globals();
+			$context = \Sentry\Tracing\TransactionContext::make();
 
-		$context = continueTrace(
-			$request->getHeaderLine( 'sentry-trace' ) ?: $request->getHeaderLine( 'traceparent' ),
-			$request->getHeaderLine( 'baggage' )
-		);
-
-		$requestPath = '/' . ltrim( $request->getUri()->getPath(), '/' );
-
-		$context->setOp( 'http.server' );
-		$context->setName( $requestPath );
-		$context->setSource( TransactionSource::url() );
-		$context->setStartTimestamp( $requestStartTime );
-
-		$context->setData( [
-			'url'                 => $requestPath,
-			'http.request.method' => strtoupper( $request->getMethod() ),
-		] );
+			$context->setOp( 'wp.cli' );
+			$context->setStartTimestamp( $cliStartTime );
+		} else {
+			$requestStartTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime( true );
+	
+			/** @var \GuzzleHttp\Psr7\ServerRequest $request */
+			$request = $this->resolve_request_from_globals();
+	
+			$context = continueTrace(
+				$request->getHeaderLine( 'sentry-trace' ) ?: $request->getHeaderLine( 'traceparent' ),
+				$request->getHeaderLine( 'baggage' )
+			);
+	
+			$requestPath = '/' . ltrim( $request->getUri()->getPath(), '/' );
+	
+			$context->setOp( 'http.server' );
+			$context->setName( $requestPath );
+			$context->setSource( TransactionSource::url() );
+			$context->setStartTimestamp( $requestStartTime );
+	
+			$context->setData( [
+				'url'                 => $requestPath,
+				'http.request.method' => strtoupper( $request->getMethod() ),
+			] );
+		}
 
 		$transaction = $sentry->startTransaction( $context );
 
