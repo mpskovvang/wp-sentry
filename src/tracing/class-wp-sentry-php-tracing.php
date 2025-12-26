@@ -89,7 +89,15 @@ final class WP_Sentry_Php_Tracing {
 
 			$context = \Sentry\Tracing\TransactionContext::make();
 
+			$command = 'unknown';
+
+			if ( version_compare( WP_CLI_VERSION, '2.0.0', '>=' ) ) {
+				$command = implode( ' ', WP_CLI::get_runner()->arguments );
+			}
+
 			$context->setOp( 'wp.cli' );
+			$context->setName( $command );
+			$context->setSource( TransactionSource::task() );
 			$context->setStartTimestamp( $cliStartTime );
 		} else {
 			$requestStartTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime( true );
