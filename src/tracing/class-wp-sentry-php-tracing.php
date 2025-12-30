@@ -148,11 +148,13 @@ final class WP_Sentry_Php_Tracing {
 			new $feature();
 		}
 
-		add_action( 'parse_request', [ $this, 'handle_parse_request' ] );
+		if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
+			add_action( 'parse_request', [ $this, 'handle_parse_request' ] );
 
-		add_filter( 'rest_dispatch_request', [ $this, 'handle_rest_dispatch_request' ], 9999, 4 );
+			add_filter( 'rest_dispatch_request', [ $this, 'handle_rest_dispatch_request' ], 9999, 4 );
 
-		add_action( 'parse_query', [ $this, 'handle_parse_query' ] );
+			add_action( 'parse_query', [ $this, 'handle_parse_query' ] );
+		}
 
 		if ( ! defined( 'WP_SENTRY_BROWSER_TRACE_PROPAGATION' ) || WP_SENTRY_BROWSER_TRACE_PROPAGATION ) {
 			// Why are we not using `wp_head`? Because we want to make sure we render the meta tags before the scripts are printed
